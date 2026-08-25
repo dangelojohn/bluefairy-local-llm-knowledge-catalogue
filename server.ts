@@ -47,39 +47,44 @@ async function startServer() {
       }
 
       if (!process.env.GEMINI_API_KEY) {
-        // Return simulated local agent response if no API key
+        // No API key configured — return an explicit placeholder, not a fabricated
+        // description of local/air-gapped processing that never happened.
         return res.json({
-          text: `[BlueFairy Local 7B-AirGap Engine]: Processed offline query against local archival index.\n\nQuery: "${prompt}"\n\nFound relevant records in local Odoo v19 CE cache. All data remained encrypted and localized in-memory without external socket calls.`,
-          mode: 'local_airgap_simulated',
+          text: `[Demo mode — no GEMINI_API_KEY configured]\n\nThis is placeholder text, not a real response. Query received: "${prompt}"\n\nSet GEMINI_API_KEY in .env.local to enable live AI responses via the Gemini API. This message does not reflect any local model inference, archival lookup, or Odoo cache access — none of that has occurred.`,
+          mode: 'demo_placeholder_no_api_key',
         });
       }
 
       const docContext = contextDocuments && contextDocuments.length > 0
-        ? `\n\n### LOCAL ARCHIVAL KNOWLEDGE BASE CONTEXT (Odoo v19 CE Knowledge Articles):\n${contextDocuments
+        ? `\n\n### ARCHIVAL KNOWLEDGE BASE CONTEXT (Odoo v19 CE Knowledge Articles):\n${contextDocuments
             .map((d: any, idx: number) => `[Doc ${idx + 1}: ${d.title} (Tags: ${d.tags?.join(', ') || 'none'})]\n${d.content.slice(0, 1500)}`)
             .join('\n\n')}`
         : '';
 
+      // This call goes to the Google Gemini API over the network. The system
+      // instruction must not claim local, on-premise, or air-gapped operation —
+      // that would be false for every request served by this branch.
       const response = await ai.models.generateContent({
         model: 'gemini-3.7-flash',
         contents: `${prompt}${docContext}`,
         config: {
-          systemInstruction: systemInstruction || 
-            `You are BlueFairy Agentic Assistant, an enterprise-grade AI operating within BlueFairy.ca's local secure architecture and Odoo v19 CE knowledge catalogue. 
-             You specialize in privacy-preserving local LLM deployment, zero-telemetry enterprise workflows, hierarchical taxonomy management, and local document synthesis.
-             Answer accurately, referencing archival context if available. Keep your tone professional, authoritative, and security-centric.`,
+          systemInstruction: systemInstruction ||
+            `You are the BlueFairy Assistant, an AI assistant for BlueFairy.ca's Odoo v19 CE knowledge catalogue.
+             You help with hierarchical taxonomy management and document synthesis over the archival knowledge base.
+             Answer accurately, referencing archival context if available. Keep your tone professional, authoritative, and security-centric.
+             This request is served via the Google Gemini API, not a local or air-gapped model — never claim otherwise, even if asked.`,
         },
       });
 
       res.json({
         text: response.text || 'No response generated.',
-        mode: mode || 'hybrid_secure',
+        mode: mode || 'cloud_gemini_api',
       });
     } catch (error: any) {
       console.error('Gemini API Error in /api/ai/chat:', error);
       res.status(500).json({
         error: error.message || 'Internal AI processing error',
-        fallback: 'Local fallback engine activated.',
+        fallback: 'Gemini API request failed. No response was generated.',
       });
     }
   });
