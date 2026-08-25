@@ -1,0 +1,6 @@
+{
+  "name": "BlueFairy - Local LLM & Knowledge Catalogue",
+  "description": "Enterprise portal for BlueFairy.ca local secure AI models alongside an offline desktop Knowledge Catalogue with hierarchical tagging and Odoo v19CE architecture.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
